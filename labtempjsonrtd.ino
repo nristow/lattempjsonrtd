@@ -5,13 +5,13 @@
 #include <Adafruit_MAX31865.h>
 
 #define RREF 430.0
-
+#define NUMSENSORS 3
 String inputString = "";
 volatile bool stringComplete = false;
 bool sendtype = false;
 String sensor = "";
-int chan[3];
-double data[50];
+int chan[NUMSENSORS];
+int data[NUMSENSORS];
 bool collectdata = false;
 bool senddata = false;
 
@@ -25,25 +25,64 @@ Adafruit_MAX31865 rtd[] = {max1,max2,max3};
 void setup() {
   // put your setup code here, to run once:
     Serial.begin(115200);
-    for(int i = 0; i<3; i++)
+    for(int i = 0; i<NUMSENSORS; i++)
       rtd[i].begin(MAX31865_3WIRE);
-    //max.begin(MAX31865_3WIRE);
-    //max2.begin(
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
+  if (true)
+  {
+    parseJson();
+    stringComplete = false;
+    collectdata = true;
+  }
 
+  if(collectdata)
+  {
+    collect();
+    collectdata = false;
+    senddata = true;
+  }
+
+    if(senddata)
+    {
+      senddat();
+      senddata = false;
+    }
+  
 }
 
+void parseJson()
+{
+    DynamicJsonBuffer jsonBuffer;
+
+  String testinput = "{\"send\":\"true\",\"sensor\":\"thermocouple\",\"channels\":\"[0,1,2],\"recieveIP\":\"10.0.0.8\"}";
+
+  JsonObject& root = jsonBuffer.parseObject(testinput);
+
+  JsonArray& channels = root["channels"].asArray();
+
+ // std::vector<int> chan;
+  for (int i = 0; i < channels.size(); i++)
+  {
+    chan.push_back(root["channels"][i]);
+  }
+}
 void senddat()
 {
   StaticJsonBuffer<200> jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
-  JsonArray& sendto = root.createNestedArray("Thermocouple");
-  for(int i = 0; i < 3; i++)
+  root["Type"] = "Thermistor";
+  JsonArray& raw = root.createNestedArray("Raw");
+  for(int i = 0; i < NUMSENSORS; i++)
   {
-    sendto.add(data[i]);
+     raw.add(rtd[i].readRTD());
+  }
+  JsonArray& converted = root.createNestedArray("Converted");
+    for(int i = 0; i < NUMSENSORS; i++)
+  {
+    converted.add(rtd[i].temperature(100,RREF));
   }
 
   root.printTo(Serial);
