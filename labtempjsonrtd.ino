@@ -35,15 +35,15 @@ void loop() {
   {
     parseJson();
     stringComplete = false;
-    collectdata = true;
-  }
-
-  if(collectdata)
-  {
-    collect();
-    collectdata = false;
     senddata = true;
   }
+
+//  if(collectdata)
+//  {
+//    collect();
+//    collectdata = false;
+//    senddata = true;
+//  }
 
     if(senddata)
     {
@@ -64,9 +64,9 @@ void parseJson()
   JsonArray& channels = root["channels"].asArray();
 
  // std::vector<int> chan;
-  for (int i = 0; i < channels.size(); i++)
+  for (int i = 0; i < NUMSENSORS; i++)
   {
-    chan.push_back(root["channels"][i]);
+    chan[i] = (root["channels"][i]);
   }
 }
 void senddat()
